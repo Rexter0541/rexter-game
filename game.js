@@ -1,137 +1,169 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// --- Game State ---
-let hp = 100;
-let qi = 100;
-let score = 0;
-let selectedElement = 'WOOD';
-let enemies = [];
-let talismans = [];
-let userAddress = null;
+// Game Constants & Stats
+let hp = 100, qi = 100, score = 0, frame = 0;
+let gameState = 'GACHA'; 
+let keys = {};
+let enemies = [], projectiles = [];
 
 const ELEMENTS = {
-    WOOD:  { color: '#40916c', beats: 'EARTH', icon: '🌿' },
-    FIRE:  { color: '#ff4d4d', beats: 'METAL', icon: '🔥' },
-    EARTH: { color: '#b07d62', beats: 'WATER', icon: '🪨' },
-    METAL: { color: '#d3d3d3', beats: 'WOOD',  icon: '⚔️' },
-    WATER: { color: '#00b4d8', beats: 'FIRE',  icon: '💧' }
+    WOOD:  { color: '#2ecc71', beats: 'EARTH', icon: '🌿' },
+    FIRE:  { color: '#e74c3c', beats: 'METAL', icon: '🔥' },
+    EARTH: { color: '#f1c40f', beats: 'WATER', icon: '🪨' },
+    METAL: { color: '#bdc3c7', beats: 'WOOD',  icon: '⚔️' },
+    WATER: { color: '#3498db', beats: 'FIRE',  icon: '💧' }
 };
 
-// --- Web3 Logic ---
-const connectBtn = document.getElementById('connectBtn');
-const saveBtn = document.getElementById('saveBtn');
+const HERO_TYPES = [
+    { name: "Willow Spirit", type: "WOOD" },
+    { name: "Inferno Monk", type: "FIRE" },
+    { name: "Jade Guardian", type: "EARTH" },
+    { name: "Silver Blade", type: "METAL" },
+    { name: "Azure Sage", type: "WATER" }
+];
 
-async function connectWallet() {
-    if (window.ethereum) {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        await provider.send("eth_requestAccounts", []);
-        const signer = provider.getSigner();
-        userAddress = await signer.getAddress();
-        connectBtn.innerText = `Connected: ${userAddress.substring(0,6)}...`;
-        saveBtn.style.display = 'inline-block';
-    } else {
-        alert("Please install MetaMask!");
-    }
-}
-connectBtn.onclick = connectWallet;
+let player = {
+    x: 100, y: 250, 
+    type: 'WOOD', 
+    speed: 4, 
+    size: 25,
+    name: ""
+};
 
-// --- Gameplay Logic ---
-function setElement(type) {
-    selectedElement = type;
-}
-
-canvas.addEventListener('mousedown', (e) => {
+// --- Gacha Logic ---
+function pullGacha() {
     if (qi >= 20) {
-        const rect = canvas.getBoundingClientRect();
-        talismans.push({
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top,
-            type: selectedElement,
-            timer: 200 // Talisman lasts for 200 frames
-        });
         qi -= 20;
+        const hero = HERO_TYPES[Math.floor(Math.random() * HERO_TYPES.length)];
+        player.type = hero.type;
+        player.name = hero.name;
+        document.getElementById('summon-result').innerHTML = 
+            `<span style="color:${ELEMENTS[hero.type].color}">${hero.name} [${hero.type}]</span>`;
+        document.getElementById('start-btn').style.display = 'inline-block';
         updateUI();
+    } else {
+        alert("Not enough Qi!");
     }
-});
+}
 
-class Enemy {
-    constructor() {
-        this.x = canvas.width;
-        this.y = Math.random() * (canvas.height - 60) + 30;
-        this.type = Object.keys(ELEMENTS)[Math.floor(Math.random() * 5)];
-        this.speed = 1 + (score / 100);
-        this.radius = 15;
-    }
-    update() { this.x -= this.speed; }
-    draw() {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2);
-        ctx.fillStyle = ELEMENTS[this.type].color;
-        ctx.fill();
-        ctx.strokeStyle = "white";
-        ctx.stroke();
-    }
+function startGame() {
+    gameState = 'BATTLE';
+    document.getElementById('gacha-overlay').style.display = 'none';
+    requestAnimationFrame(gameLoop);
 }
 
 function updateUI() {
-    document.getElementById('hp-val').innerText = hp;
-    document.getElementById('qi-val').innerText = qi;
-    document.getElementById('wave-val').innerText = Math.floor(score/10) + 1;
+    document.getElementById('hp-txt').innerText = hp;
+    document.getElementById('qi-txt').innerText = qi;
+    document.getElementById('score-txt').innerText = score;
+}
+
+// --- Inputs ---
+window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+// --- Game Functions ---
+function spawnEnemy() {
+    if (frame % 60 === 0) {
+        enemies.push({
+            x: canvas.width,
+            y: Math.random() * (canvas.height - 40) + 20,
+            type: Object.keys(ELEMENTS)[Math.floor(Math.random() * 5)],
+            hp: 1,
+            speed: 1.5 + (score / 20)
+        });
+    }
 }
 
 function gameLoop() {
+    if (gameState !== 'BATTLE' || hp <= 0) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    frame++;
 
-    // Spawn Logic
-    if (Math.random() < 0.02) enemies.push(new Enemy());
+    // 1. Player Movement
+    if (keys['w'] && player.y > 20) player.y -= player.speed;
+    if (keys['s'] && player.y < canvas.height - 20) player.y += player.speed;
+    if (keys['a'] && player.x > 20) player.x -= player.speed;
+    if (keys['d'] && player.x < canvas.width - 20) player.x += player.speed;
 
-    // Update Talismans
-    talismans.forEach((t, i) => {
-        ctx.font = "24px serif";
-        ctx.fillText(ELEMENTS[t.type].icon, t.x - 12, t.y + 10);
-        t.timer--;
-        if (t.timer <= 0) talismans.splice(i, 1);
+    // Draw Player
+    ctx.font = "30px Arial";
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = ELEMENTS[player.type].color;
+    ctx.fillText("🧙‍♂️", player.x - 15, player.y + 10);
+    ctx.shadowBlur = 0;
+
+    // 2. Auto-Attack Logic
+    if (frame % 25 === 0 && enemies.length > 0) {
+        // Find nearest enemy
+        let nearest = enemies.reduce((prev, curr) => {
+            let d1 = Math.hypot(player.x - prev.x, player.y - prev.y);
+            let d2 = Math.hypot(player.x - curr.x, player.y - curr.y);
+            return d1 < d2 ? prev : curr;
+        });
+
+        projectiles.push({
+            x: player.x, y: player.y,
+            tx: nearest.x, ty: nearest.y,
+            type: player.type,
+            speed: 6
+        });
+    }
+
+    // 3. Update Projectiles
+    projectiles.forEach((p, pi) => {
+        let angle = Math.atan2(p.ty - p.y, p.tx - p.x);
+        p.x += Math.cos(angle) * p.speed;
+        p.y += Math.sin(angle) * p.speed;
+
+        ctx.fillStyle = ELEMENTS[p.type].color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, Math.PI*2);
+        ctx.fill();
+
+        if (p.x > canvas.width || p.x < 0) projectiles.splice(pi, 1);
     });
 
-    // Update Enemies
-    enemies.forEach((enemy, ei) => {
-        enemy.update();
-        enemy.draw();
+    // 4. Update Enemies
+    spawnEnemy();
+    enemies.forEach((en, ei) => {
+        en.x -= en.speed;
+        
+        // Draw Enemy
+        ctx.fillStyle = ELEMENTS[en.type].color;
+        ctx.beginPath();
+        ctx.arc(en.x, en.y, 12, 0, Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle = "white";
+        ctx.stroke();
 
-        // Check Mountain Breach
-        if (enemy.x < 0) {
+        // Collision with Projectile
+        projectiles.forEach((proj, pi) => {
+            if (Math.hypot(proj.x - en.x, proj.y - en.y) < 20) {
+                // Elemental Check
+                if (ELEMENTS[proj.type].beats === en.type) {
+                    enemies.splice(ei, 1);
+                    score++;
+                    qi += 2;
+                    updateUI();
+                }
+                projectiles.splice(pi, 1);
+            }
+        });
+
+        // Breach Mountain
+        if (en.x < 0) {
             hp -= 10;
             enemies.splice(ei, 1);
             updateUI();
         }
-
-        // Check Talisman Collision
-        talismans.forEach((tali, ti) => {
-            let dist = Math.hypot(enemy.x - tali.x, enemy.y - tali.y);
-            if (dist < 30) {
-                if (ELEMENTS[tali.type].beats === enemy.type) {
-                    enemies.splice(ei, 1);
-                    score++;
-                    qi += 10;
-                    updateUI();
-                } else {
-                    // Wrong element: Talisman breaks instantly
-                    talismans.splice(ti, 1);
-                }
-            }
-        });
     });
 
     if (hp > 0) {
         requestAnimationFrame(gameLoop);
     } else {
-        ctx.fillStyle = "rgba(0,0,0,0.8)";
-        ctx.fillRect(0,0,canvas.width, canvas.height);
-        ctx.fillStyle = "gold";
-        ctx.font = "40px Palatino";
-        ctx.fillText("Cultivation Ended", canvas.width/2 - 150, canvas.height/2);
+        alert("Game Over! Final Score: " + score);
+        location.reload();
     }
 }
-
-gameLoop();

@@ -3,37 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taoist Defense | Five Elements Web3</title>
+    <title>Taoist Survivor: Five Elements</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
 </head>
 <body>
-    <div id="game-container">
-        <header>
-            <h1>☯️ Five Elements Defense</h1>
-            <div id="stats-bar">
-                <span>HP: <b id="hp-val">100</b></span>
-                <span>QI: <b id="qi-val">50</b></span>
-                <span>WAVE: <b id="wave-val">1</b></span>
-            </div>
-        </header>
+    <div id="ui-layer">
+        <div id="stats">
+            <span>HP: <b id="hp-txt">100</b></span> | 
+            <span>QI: <b id="qi-txt">100</b></span> | 
+            <span>KILLS: <b id="score-txt">0</b></span>
+        </div>
 
-        <canvas id="gameCanvas" width="800" height="400"></canvas>
-
-        <div class="controls">
-            <div class="element-selectors">
-                <button class="btn wood" onclick="setElement('WOOD')">🌿 Wood</button>
-                <button class="btn fire" onclick="setElement('FIRE')">🔥 Fire</button>
-                <button class="btn earth" onclick="setElement('EARTH')">🪨 Earth</button>
-                <button class="btn metal" onclick="setElement('METAL')">⚔️ Metal</button>
-                <button class="btn water" onclick="setElement('WATER')">💧 Water</button>
-            </div>
-            <div class="web3-panel">
-                <button id="connectBtn" class="web3-btn">Connect Wallet</button>
-                <button id="saveBtn" class="web3-btn" style="display:none;">Record Path (On-Chain)</button>
+        <div id="gacha-overlay">
+            <div class="gacha-card">
+                <h2>Temple of Summoning</h2>
+                <div id="summon-result">???</div>
+                <p>Cost: 20 Qi per summon</p>
+                <div class="gacha-btns">
+                    <button class="gacha-btn" onclick="pullGacha()">Summon Taoist</button>
+                    <button id="start-btn" class="gacha-btn gold" onclick="startGame()" style="display:none;">Defend the Mountain</button>
+                </div>
             </div>
         </div>
-        <p class="hint">Goal: Place Talismans to stop elemental spirits. Wood > Earth > Water > Fire > Metal > Wood.</p>
+
+        <canvas id="gameCanvas" width="800" height="500"></canvas>
+
+        <div class="footer-ui">
+            <button id="connectBtn" class="web3-small">Connect Wallet</button>
+            <span>WASD to Move | Auto-attacks nearest enemy</span>
+        </div>
     </div>
     <script src="game.js"></script>
 </body>

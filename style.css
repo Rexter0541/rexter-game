@@ -1,66 +1,67 @@
 body {
-    background: #0f1410;
+    background: #0a0a0a;
     color: #e0d7c6;
-    font-family: 'Palatino', 'Georgia', serif;
+    font-family: 'Palatino Linotype', serif;
+    margin: 0;
     display: flex;
     justify-content: center;
-    padding-top: 20px;
-    margin: 0;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
 }
 
-#game-container { text-align: center; width: 850px; }
+#ui-layer { position: relative; text-align: center; }
+
+#stats {
+    background: rgba(20, 30, 20, 0.9);
+    padding: 10px;
+    border: 1px solid #4a5d4a;
+    border-radius: 5px 5px 0 0;
+}
 
 canvas {
-    background: linear-gradient(to right, #1a2a1a, #050a05);
-    border: 2px solid #4a5d4a;
-    border-radius: 10px;
-    cursor: crosshair;
-    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    background: radial-gradient(circle, #1a241a 0%, #000 100%);
+    border: 2px solid #555;
+    display: block;
 }
 
-#stats-bar {
+#gacha-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
     display: flex;
-    justify-content: space-around;
-    background: #1d261d;
-    padding: 10px;
-    border-radius: 10px 10px 0 0;
-    border: 1px solid #4a5d4a;
-}
-
-.element-selectors {
-    display: flex;
-    gap: 10px;
     justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.gacha-card {
+    background: #1c1c1c;
+    padding: 40px;
+    border: 2px solid #d4af37;
+    border-radius: 15px;
+    box-shadow: 0 0 20px #d4af37;
+}
+
+#summon-result {
+    font-size: 1.8em;
     margin: 20px 0;
+    height: 50px;
+    color: #ffd700;
 }
 
-.btn {
-    padding: 12px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
+.gacha-btn {
+    background: #2d6a4f;
     color: white;
-    transition: transform 0.1s;
-}
-
-.btn:active { transform: scale(0.95); }
-
-/* Element Colors */
-.wood { background: #2d6a4f; }
-.fire { background: #9b2226; }
-.earth { background: #9c6644; }
-.metal { background: #717171; }
-.water { background: #0077b6; }
-
-.web3-panel { margin-top: 15px; }
-.web3-btn {
-    background: #b8860b;
-    border: 1px solid #ffd700;
-    color: black;
+    border: none;
     padding: 10px 20px;
-    border-radius: 20px;
+    margin: 5px;
     cursor: pointer;
+    font-size: 1em;
 }
 
-.hint { font-style: italic; color: #888; font-size: 0.9em; }
+.gacha-btn.gold { background: #d4af37; color: black; font-weight: bold; }
+
+.web3-small { background: transparent; color: #888; border: 1px solid #444; cursor: pointer; }
+
+.footer-ui { margin-top: 10px; display: flex; justify-content: space-between; font-size: 0.8em; }
