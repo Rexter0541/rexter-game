@@ -3,30 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taoist Defense: Five Elements</title>
+    <title>Taoist Defense | Five Elements Web3</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
 </head>
 <body>
-    <div id="game-ui">
-        <h1>☯️ Five Elements Defense</h1>
-        <div id="stats">
-            Health: <span id="hp">100</span> | Qi (Gold): <span id="qi">50</span>
-        </div>
-        <canvas id="gameCanvas" width="800" height="400"></canvas>
-        
-        <div class="talisman-bar">
-            <button onclick="selectElement('WOOD')">🌿 Wood (10 Qi)</button>
-            <button onclick="selectElement('FIRE')">🔥 Fire (10 Qi)</button>
-            <button onclick="selectElement('EARTH')">🪨 Earth (10 Qi)</button>
-            <button onclick="selectElement('METAL')">⚔️ Metal (10 Qi)</button>
-            <button onclick="selectElement('WATER')">💧 Water (10 Qi)</button>
-        </div>
-        
-        <div id="web3-actions">
-            <button id="connectWallet" class="web3-btn">Connect Wallet to Record Path</button>
-        </div>
-    </div>
+    <div id="game-container">
+        <header>
+            <h1>☯️ Five Elements Defense</h1>
+            <div id="stats-bar">
+                <span>HP: <b id="hp-val">100</b></span>
+                <span>QI: <b id="qi-val">50</b></span>
+                <span>WAVE: <b id="wave-val">1</b></span>
+            </div>
+        </header>
 
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+        <div class="controls">
+            <div class="element-selectors">
+                <button class="btn wood" onclick="setElement('WOOD')">🌿 Wood</button>
+                <button class="btn fire" onclick="setElement('FIRE')">🔥 Fire</button>
+                <button class="btn earth" onclick="setElement('EARTH')">🪨 Earth</button>
+                <button class="btn metal" onclick="setElement('METAL')">⚔️ Metal</button>
+                <button class="btn water" onclick="setElement('WATER')">💧 Water</button>
+            </div>
+            <div class="web3-panel">
+                <button id="connectBtn" class="web3-btn">Connect Wallet</button>
+                <button id="saveBtn" class="web3-btn" style="display:none;">Record Path (On-Chain)</button>
+            </div>
+        </div>
+        <p class="hint">Goal: Place Talismans to stop elemental spirits. Wood > Earth > Water > Fire > Metal > Wood.</p>
+    </div>
     <script src="game.js"></script>
 </body>
 </html>

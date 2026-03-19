@@ -1,109 +1,137 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// 1. Core Data
-const ELEMENT_TYPES = {
-    WOOD:  { color: '#2ecc71', beats: 'EARTH' },
-    FIRE:  { color: '#e74c3c', beats: 'METAL' },
-    EARTH: { color: '#f1c40f', beats: 'WATER' },
-    METAL: { color: '#bdc3c7', beats: 'WOOD' },
-    WATER: { color: '#3498db', beats: 'FIRE' }
+// --- Game State ---
+let hp = 100;
+let qi = 100;
+let score = 0;
+let selectedElement = 'WOOD';
+let enemies = [];
+let talismans = [];
+let userAddress = null;
+
+const ELEMENTS = {
+    WOOD:  { color: '#40916c', beats: 'EARTH', icon: '🌿' },
+    FIRE:  { color: '#ff4d4d', beats: 'METAL', icon: '🔥' },
+    EARTH: { color: '#b07d62', beats: 'WATER', icon: '🪨' },
+    METAL: { color: '#d3d3d3', beats: 'WOOD',  icon: '⚔️' },
+    WATER: { color: '#00b4d8', beats: 'FIRE',  icon: '💧' }
 };
 
-let qi = 50;
-let hp = 100;
-let enemies = [];
-let activeTalismans = [];
-let selectedElement = 'WOOD';
+// --- Web3 Logic ---
+const connectBtn = document.getElementById('connectBtn');
+const saveBtn = document.getElementById('saveBtn');
 
-// 2. Element Selection
-function selectElement(type) {
+async function connectWallet() {
+    if (window.ethereum) {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        const signer = provider.getSigner();
+        userAddress = await signer.getAddress();
+        connectBtn.innerText = `Connected: ${userAddress.substring(0,6)}...`;
+        saveBtn.style.display = 'inline-block';
+    } else {
+        alert("Please install MetaMask!");
+    }
+}
+connectBtn.onclick = connectWallet;
+
+// --- Gameplay Logic ---
+function setElement(type) {
     selectedElement = type;
 }
 
-// 3. Game Objects
-class Enemy {
-    constructor() {
-        this.x = canvas.width;
-        this.y = Math.random() * (canvas.height - 50) + 25;
-        this.type = Object.keys(ELEMENT_TYPES)[Math.floor(Math.random() * 5)];
-        this.speed = 1.5;
-        this.radius = 15;
-    }
-
-    draw() {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = ELEMENT_TYPES[this.type].color;
-        ctx.fill();
-        ctx.closePath();
-    }
-
-    update() {
-        this.x -= this.speed;
-    }
-}
-
-// 4. Input: Clicking the canvas to place a "Talisman Trap"
-canvas.addEventListener('click', (e) => {
-    if (qi >= 10) {
+canvas.addEventListener('mousedown', (e) => {
+    if (qi >= 20) {
         const rect = canvas.getBoundingClientRect();
-        activeTalismans.push({
+        talismans.push({
             x: e.clientX - rect.left,
             y: e.clientY - rect.top,
             type: selectedElement,
-            life: 100
+            timer: 200 // Talisman lasts for 200 frames
         });
-        qi -= 10;
-        document.getElementById('qi').innerText = qi;
+        qi -= 20;
+        updateUI();
     }
 });
 
-// 5. Main Game Loop
+class Enemy {
+    constructor() {
+        this.x = canvas.width;
+        this.y = Math.random() * (canvas.height - 60) + 30;
+        this.type = Object.keys(ELEMENTS)[Math.floor(Math.random() * 5)];
+        this.speed = 1 + (score / 100);
+        this.radius = 15;
+    }
+    update() { this.x -= this.speed; }
+    draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2);
+        ctx.fillStyle = ELEMENTS[this.type].color;
+        ctx.fill();
+        ctx.strokeStyle = "white";
+        ctx.stroke();
+    }
+}
+
+function updateUI() {
+    document.getElementById('hp-val').innerText = hp;
+    document.getElementById('qi-val').innerText = qi;
+    document.getElementById('wave-val').innerText = Math.floor(score/10) + 1;
+}
+
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Spawn enemies
+    // Spawn Logic
     if (Math.random() < 0.02) enemies.push(new Enemy());
 
-    // Update/Draw Enemies
-    enemies.forEach((enemy, eIndex) => {
+    // Update Talismans
+    talismans.forEach((t, i) => {
+        ctx.font = "24px serif";
+        ctx.fillText(ELEMENTS[t.type].icon, t.x - 12, t.y + 10);
+        t.timer--;
+        if (t.timer <= 0) talismans.splice(i, 1);
+    });
+
+    // Update Enemies
+    enemies.forEach((enemy, ei) => {
         enemy.update();
         enemy.draw();
 
-        // Check for reach mountain (left side)
+        // Check Mountain Breach
         if (enemy.x < 0) {
             hp -= 10;
-            enemies.splice(eIndex, 1);
-            document.getElementById('hp').innerText = hp;
+            enemies.splice(ei, 1);
+            updateUI();
         }
 
-        // Check for collision with Talismans
-        activeTalismans.forEach((talisman, tIndex) => {
-            let dist = Math.hypot(enemy.x - talisman.x, enemy.y - talisman.y);
+        // Check Talisman Collision
+        talismans.forEach((tali, ti) => {
+            let dist = Math.hypot(enemy.x - tali.x, enemy.y - tali.y);
             if (dist < 30) {
-                // THE CORE LOGIC: Does player beat enemy?
-                if (ELEMENT_TYPES[talisman.type].beats === enemy.type) {
-                    enemies.splice(eIndex, 1); // Enemy destroyed
-                    qi += 15; // Gain Qi
-                    document.getElementById('qi').innerText = qi;
+                if (ELEMENTS[tali.type].beats === enemy.type) {
+                    enemies.splice(ei, 1);
+                    score++;
+                    qi += 10;
+                    updateUI();
                 } else {
-                    activeTalismans.splice(tIndex, 1); // Talisman breaks
+                    // Wrong element: Talisman breaks instantly
+                    talismans.splice(ti, 1);
                 }
             }
         });
     });
 
-    // Draw Talismans
-    activeTalismans.forEach(t => {
-        ctx.font = "20px serif";
-        ctx.fillText("📜", t.x - 10, t.y + 10);
-        ctx.strokeStyle = ELEMENT_TYPES[t.type].color;
-        ctx.strokeRect(t.x - 15, t.y - 15, 30, 30);
-    });
-
-    if (hp > 0) requestAnimationFrame(gameLoop);
-    else alert("Your Cultivation has ended. The mountain is lost.");
+    if (hp > 0) {
+        requestAnimationFrame(gameLoop);
+    } else {
+        ctx.fillStyle = "rgba(0,0,0,0.8)";
+        ctx.fillRect(0,0,canvas.width, canvas.height);
+        ctx.fillStyle = "gold";
+        ctx.font = "40px Palatino";
+        ctx.fillText("Cultivation Ended", canvas.width/2 - 150, canvas.height/2);
+    }
 }
 
 gameLoop();
