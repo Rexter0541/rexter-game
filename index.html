@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taoist Defense: Five Elements</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-ui">
+        <h1>☯️ Five Elements Defense</h1>
+        <div id="stats">
+            Health: <span id="hp">100</span> | Qi (Gold): <span id="qi">50</span>
+        </div>
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        
+        <div class="talisman-bar">
+            <button onclick="selectElement('WOOD')">🌿 Wood (10 Qi)</button>
+            <button onclick="selectElement('FIRE')">🔥 Fire (10 Qi)</button>
+            <button onclick="selectElement('EARTH')">🪨 Earth (10 Qi)</button>
+            <button onclick="selectElement('METAL')">⚔️ Metal (10 Qi)</button>
+            <button onclick="selectElement('WATER')">💧 Water (10 Qi)</button>
+        </div>
+        
+        <div id="web3-actions">
+            <button id="connectWallet" class="web3-btn">Connect Wallet to Record Path</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
